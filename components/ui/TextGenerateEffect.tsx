@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useMemo, useCallback } from "react";
 import { motion, stagger, useAnimate } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -11,8 +11,12 @@ export const TextGenerateEffect = ({
   className?: string;
 }) => {
   const [scope, animate] = useAnimate();
-  let wordsArray = words.split(" ");
-  useEffect(() => {
+
+  // Memoize wordsArray to prevent recreation on every render
+  const wordsArray = useMemo(() => words.split(" "), [words]);
+
+  // Memoize the animation function
+  const startAnimation = useCallback(() => {
     console.log(wordsArray);
     animate(
       "span",
@@ -24,7 +28,12 @@ export const TextGenerateEffect = ({
         delay: stagger(0.2),
       }
     );
-  }, [scope.current]);
+  }, [animate, wordsArray]);
+
+  // Fix: Add proper dependencies and remove scope.current
+  useEffect(() => {
+    startAnimation();
+  }, [startAnimation]);
 
   const renderWords = () => {
     return (
