@@ -3,13 +3,26 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { IoCopyOutline } from "react-icons/io5";
-import Lottie from "react-lottie";
+import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
 import { BackgroundGradientAnimation } from "./GradientBg";
-import GridGlobe from "./GridGlobe";
-import GridMusicPlayer from "./GridMusicPlayer";
-import animationData from "@/data/confetti.json";
 import MagicButton from "../MagicButton";
+
+// Fix: Import Lottie and GridGlobe dynamically to avoid SSR issues
+const Lottie = dynamic(() => import("react-lottie"), {
+  ssr: false,
+  loading: () => <div className="w-[400px] h-[200px] animate-pulse bg-white/10 rounded-lg" />
+});
+
+const GridGlobe = dynamic(() => import("./GridGlobe"), {
+  ssr: false,
+  loading: () => <div className="w-full h-[300px] animate-pulse bg-white/5 rounded-lg flex items-center justify-center text-white/50">Loading Globe...</div>
+});
+
+const GridMusicPlayer = dynamic(() => import("./GridMusicPlayer"), {
+  ssr: false,
+  loading: () => <div className="w-full h-full animate-pulse bg-white/5 rounded-lg flex items-center justify-center text-white/50">Loading Music Player...</div>
+});
 
 type BentoGridProps = {
   className?: string;
@@ -95,25 +108,50 @@ export const BentoGridItem: React.FC<BentoGridItemProps> = ({
   const [copied, setCopied] = useState(false);
   const [currentSongIndex, setCurrentSongIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
-  const defaultOptions = {
+  // Fix: Only initialize Lottie options on client side
+  const [animationData, setAnimationData] = useState<any>(null);
+
+  useEffect(() => {
+    setIsClient(true);
+    // Fix: Load animation data only on client side
+    if (typeof window !== 'undefined') {
+      import("@/data/confetti.json").then((data) => {
+        setAnimationData(data.default || data);
+      });
+    }
+  }, []);
+
+  const defaultOptions = animationData ? {
     loop: copied,
     autoplay: copied,
-    animationData: animationData as any,
+    animationData: animationData,
     rendererSettings: {
       preserveAspectRatio: "xMidYMid slice",
     },
-  };
+  } : null;
 
   const handleCopy = () => {
     const text = "andresnei0820@@gmail.com"; // Replace with your email
-    navigator.clipboard.writeText(text);
-    setCopied(true);
+
+    // Fix: Add SSR check for navigator.clipboard
+    if (typeof window !== 'undefined' && navigator?.clipboard) {
+      navigator.clipboard.writeText(text);
+      setCopied(true);
+    } else {
+      // Fallback for older browsers or SSR
+      console.log('Clipboard API not available');
+      setCopied(true);
+    }
   };
 
   // Listen for music player state changes (solo cuando id === 3)
   useEffect(() => {
     if (id !== 3) return;
+
+    // Fix: Add SSR check for window event listeners
+    if (typeof window === 'undefined') return;
 
     const handleMusicChange = (event: Event) => {
       const e = event as CustomEvent<MusicPlayerStateDetail>;
@@ -315,8 +353,11 @@ export const BentoGridItem: React.FC<BentoGridItemProps> = ({
 
               {id === 6 && (
                 <div className="mt-5 relative">
+                  {/* Fix: Only render Lottie on client side with proper checks */}
                   <div className={`absolute -bottom-5 right-0 ${copied ? "block" : "block"}`}>
-                    <Lottie options={defaultOptions} height={200} width={400} />
+                    {isClient && defaultOptions && (
+                      <Lottie options={defaultOptions} height={200} width={400} />
+                    )}
                   </div>
 
                   <MagicButton

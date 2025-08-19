@@ -6,7 +6,6 @@ import { navItems } from "@/data";
 import Hero from "@/components/Hero";
 import Grid from "@/components/Grid";
 import Footer from "@/components/Footer";
-import Clients from "@/components/Clients";
 import Approach from "@/components/Approach";
 import Experience from "@/components/Experience";
 import RecentProjects from "@/components/RecentProjects";
@@ -18,22 +17,17 @@ const Home = () => {
   const [showOverlay, setShowOverlay] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  // Fix: Add SSR check for document access
+  // Prevent scrolling while overlay is active
   useEffect(() => {
-    // Only run on client side
-    if (typeof window !== 'undefined' && document) {
-      if (showOverlay) {
-        document.body.style.overflow = 'hidden';
-      } else {
-        document.body.style.overflow = 'unset';
-      }
+    if (showOverlay) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
     }
 
-    // Cleanup function also needs SSR check
+    // Cleanup
     return () => {
-      if (typeof window !== 'undefined' && document) {
-        document.body.style.overflow = 'unset';
-      }
+      document.body.style.overflow = 'unset';
     };
   }, [showOverlay]);
 
@@ -66,10 +60,10 @@ const Home = () => {
         <div className="max-w-7xl w-full">
           <FloatingNav navItems={navItems} />
           <Hero />
-          <Grid />
-          <TechStack />
+           <Grid />
+          <TechStack /> 
           <RecentProjects />
-          {/*  <Clients /> */}
+         {/*  <Clients /> */}
           <Experience />
           <Approach />
           <Footer />
